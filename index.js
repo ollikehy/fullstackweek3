@@ -2,7 +2,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
-
+const Person = require('./models/person')
 const app = express()
 
 app.use(cors())
@@ -41,14 +41,22 @@ app.get('/info', (req, res) => {
 })
 
 app.get('/api/persons', (req, res) => {
-    res.json(persons)
+    Person
+        .find({})
+        .then(person => {
+            res.json(person.map(Person.formatPerson))
+        })
 })
 
 app.get('/api/persons/:id', (req, res) => {
-    const id = Number(req.params.id)
-    const person = persons.find(p => p.id === id)
+    const id = req.params.id
+    const person = Person.findById(req.params.id)
     if (person) {
-        res.json(person)
+        Person
+            .findById(req.params.id)
+            .then(person => {
+                res.json(Person.formatPerson(person))
+            })
     } else {
         res.status(404).end()
     }
@@ -75,14 +83,17 @@ app.post('/api/persons', (req, res) => {
         }
     })
 
-    const person = {
+    const person = new Person({
         name: body.name,
         number: body.number,
         id: generatedId
-    }
-
-    persons = persons.concat(person)
-    res.json(person)
+    })
+    
+    person
+        .save()
+        .then(savedPerson => {
+            res.json(Person.formatPerson(savedPerson))
+        })
 }) 
 
 const PORT = process.env.PORT || 3001
